@@ -7,9 +7,12 @@ from src.utils import call_api, parse_yap_output
 
 logger = logging.getLogger()
 
-
-with open('conversion_map.json', 'r') as f:
-    CONVERSION_TABLE = json.load(f)
+try:
+    with open('conversion_map.json', 'r') as f:
+        CONVERSION_TABLE = json.load(f)
+except FileNotFoundError:
+    with open('src/conversion_map.json', 'r') as f:
+        CONVERSION_TABLE = json.load(f)
 
 PRONOUNS = CONVERSION_TABLE["pronouns"]
 POS = CONVERSION_TABLE["basic_pos"]

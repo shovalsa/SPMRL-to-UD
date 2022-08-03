@@ -30,8 +30,8 @@ def handle_quotes(text):
 def call_api(text, url):
     url = f'{url}/yap/heb/joint'  # change this if you refer to a remote YAP server
     text_to_sentences = re.split(r"(?<=\S[\.\?\!]\s)", text)
-    for sentence in text_to_sentences:
-        sentence = handle_punct(sentence)
+    for txt in text_to_sentences:
+        sentence = handle_punct(txt)
         sentence = handle_quotes(sentence)
         try:
             response = requests.post(url,
@@ -49,4 +49,4 @@ def call_api(text, url):
                                      params={'verbose': 2, 'include_yap_outputs': True})
             content = response.json()
             content = content["dep_tree"]
-        yield sentence, content
+        yield txt, content
