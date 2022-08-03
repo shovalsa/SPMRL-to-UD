@@ -1,15 +1,9 @@
 import streamlit as st
 from src.utils import parse_yap_output, call_api
-from src.converter import convert_dep_tree_to_ud
+from src.converter import run
 
-import spacy
 from spacy import displacy
 import base64
-from io import StringIO
-
-
-
-url = 'http://localhost:8000/yap/heb/joint'  # change this if you refer to a remote YAP server
 
 
 def convert_to_displacy_format(df):
@@ -44,13 +38,14 @@ def convert_to_displacy_format(df):
 
 
 if __name__ == "__main__":
+    url = 'http://localhost:8000'  # change this if you refer to a remote YAP server
     with st.sidebar:
         st.title("Convert YAP's SPMRL output to UD")
         text = st.text_area("", placeholder="גנן גידל דגן בגן")
         button = st.button('parse text')
     if button:
         st.header("Dependency Trees")
-        for sentence, content in call_api(text):
+        for sentence, content in call_api(text, url):
             st.subheader(sentence)
             st.write("SPMRL: ")
             spmrl = None
@@ -65,7 +60,7 @@ if __name__ == "__main__":
             if spmrl is not None:
                 st.write("UD: ")
                 try:
-                    ud = convert_dep_tree_to_ud(spmrl)
+                    ud = run(spmrl)
                     dep_svg_ud = convert_to_displacy_format(ud)
                     st.write(dep_svg_ud, unsafe_allow_html=True)
                 except Exception as e:

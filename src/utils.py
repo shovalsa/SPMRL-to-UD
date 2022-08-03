@@ -27,15 +27,26 @@ def handle_quotes(text):
     return text
 
 
-def call_api(text):
-    url = 'http://127.0.0.1:8000/yap/heb/joint'  # change this if you refer to a remote YAP server
+def call_api(text, url):
+    url = f'{url}/yap/heb/joint'  # change this if you refer to a remote YAP server
     text_to_sentences = re.split(r"(?<=\S[\.\?\!]\s)", text)
     for sentence in text_to_sentences:
         sentence = handle_punct(sentence)
         sentence = handle_quotes(sentence)
-        response = requests.post(url,
-                                 headers={'accept': 'application/json', 'Content-Type': 'application/json'},
-                                 json={'text': sentence},
-                                 params={'verbose': 2, 'include_yap_outputs': True})
-        content = response.json()
-        yield sentence, content["dep_tree"]
+        try:
+            response = requests.post(url,
+                                     headers={'accept': 'application/json', 'Content-Type': 'application/json'},
+                                     json={'text': sentence},
+                                     params={'verbose': 2, 'include_yap_outputs': True})
+            content = response.json()
+            content = content["dep_tree"]
+        except KeyError:
+            sentence = '{"text":"  %s  "}' % sentence
+            sentence = sentence.encode('utf-8')
+            response = requests.post(url,
+                                     headers={'accept': 'application/json', 'Content-Type': 'application/json'},
+                                     data=sentence,
+                                     params={'verbose': 2, 'include_yap_outputs': True})
+            content = response.json()
+            content = content["dep_tree"]
+        yield sentence, content

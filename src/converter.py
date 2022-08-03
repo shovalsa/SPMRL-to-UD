@@ -3,15 +3,12 @@ import networkx as nx
 import json
 from collections import defaultdict
 import logging
-import matplotlib.pyplot as plt
-
+from src.utils import call_api, parse_yap_output
 
 logger = logging.getLogger()
-pd.set_option('display.max_colwidth', -1)
-pd.set_option('display.max_columns', None)
 
 
-with open('src/conversion_map.json', 'r') as f:
+with open('conversion_map.json', 'r') as f:
     CONVERSION_TABLE = json.load(f)
 
 PRONOUNS = CONVERSION_TABLE["pronouns"]
@@ -296,7 +293,7 @@ def convert_sentence_to_graph(dep_tree) -> nx.DiGraph:
     return graph
 
 
-def convert_dep_tree_to_ud(dep_tree: pd.DataFrame) -> pd.DataFrame:
+def run(dep_tree: pd.DataFrame) -> pd.DataFrame:
     graph = convert_sentence_to_graph(dep_tree)
     nodelist = list(graph.nodes(data=True))
     df = pd.DataFrame(columns=["ID", "FORM", "LEMMA", "XPOS", "UPOS", "FEATS", "HEAD", "DEPREL"])
@@ -315,17 +312,12 @@ def convert_dep_tree_to_ud(dep_tree: pd.DataFrame) -> pd.DataFrame:
     return df
 
 
-def draw_graph(graph):
-    pos = nx.spring_layout(graph)
-
-    nx.draw_networkx_nodes(graph, pos, cmap=plt.get_cmap('jet'), node_size=500, label="form")
-    nx.draw_networkx_labels(graph, pos)
-    nx.draw_networkx_edge_labels(graph, pos)
-    nx.draw_networkx_edges(graph, pos, edgelist=graph.edges, arrows=True)
-    plt.show()
-
-
 if __name__ == '__main__':
-    ip = '127.0.0.1:8000'
-    text = 'עד סוף השנה לא תועסק בארץ אף אחות כעובדת זרה .'
+    url = 'http://127.0.0.1:8000'
+    text = 'אכלת פלפל? שתה מיץ.'
+    yap_output = call_api(text, url)
+    for _, sent in yap_output:
+        df = parse_yap_output(sent)
+        print(run(df))
+
 
