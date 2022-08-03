@@ -5,8 +5,6 @@ import requests
 
 
 def parse_yap_output(output):
-    print(output)
-    print([l.split("\t") for l in output.split("\n") if l])
     tsv = StringIO(output)
     columns = ["ID", "FORM", "LEMMA", "XPOS", "UPOS", "FEATS", "HEAD", "DEPREL", "MISC1", "MISC2"]
 
@@ -30,14 +28,14 @@ def handle_quotes(text):
 
 
 def call_api(text):
-    text = handle_punct(text)
-    text = handle_quotes(text)
     url = 'http://127.0.0.1:8000/yap/heb/joint'  # change this if you refer to a remote YAP server
-    text = '{"text":"  %s  "}' % text
-    text = text.encode('utf-8')
-    response = requests.post(url,
-                             headers={'accept': 'application/json', 'Content-Type': 'application/json'},
-                             data=text,
-                             params={'verbose': 2, 'include_yap_outputs': True})
-    content = response.json()
-    return content["dep_tree"]
+    text_to_sentences = re.split(r"(?<=\S[\.\?\!]\s)", text)
+    for sentence in text_to_sentences:
+        sentence = handle_punct(sentence)
+        sentence = handle_quotes(sentence)
+        response = requests.post(url,
+                                 headers={'accept': 'application/json', 'Content-Type': 'application/json'},
+                                 json={'text': sentence},
+                                 params={'verbose': 2, 'include_yap_outputs': True})
+        content = response.json()
+        yield sentence, content["dep_tree"]
