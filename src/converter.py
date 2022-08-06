@@ -2,8 +2,8 @@ import pandas as pd
 import networkx as nx
 import json
 from collections import defaultdict
-import logging
 from src.utils import call_api, parse_yap_output
+import logging
 
 logger = logging.getLogger()
 
@@ -114,7 +114,8 @@ def base_features_conversion(old_features):
     old_features = "|".join(current_feats)
     for feature in current_feats:
         if feature:
-            old_features = old_features.replace(feature, FEATURES[feature])
+            if feature != "_":
+                old_features = old_features.replace(feature, FEATURES[feature])
     return old_features, suffix_feats
 
 
@@ -208,7 +209,7 @@ def convert_graph(graph: nx.DiGraph) -> nx.DiGraph:
         graph = convert_pos(graph, node_idx, node)
         graph = convert_features(graph, node_idx, node)
         graph = convert_labels(graph, node_idx, node, parents)
-        for att in ["form", "pos", "lemma", "arc_label"]:
+        for att in ["form", "pos", "lemma", "arc_label", "ents"]:
             if not node[att]["new"]:
                 node[att]["new"] = node[att]["old"]
     return graph
@@ -231,6 +232,7 @@ def add_functional_nodes_if_necessary(graph, node_idx):
                 features={"new": "_", "old": features},
                 arc_label={"new": "case:gen", "old": "case:gen"},
                 parent=node_idx+2,
+                ents={"new": node["ents"]["old"], "old": ""}
             )
             graph.add_node(
                 node_idx+2,
@@ -240,6 +242,7 @@ def add_functional_nodes_if_necessary(graph, node_idx):
                 features={"new": f"Case=Gen|{clean_suffix_feats}|PronType=Prs", "old": ""},
                 arc_label={"new": "nmod:poss", "old": "nmod:poss"},
                 parent=node_idx,
+                ents={"new": node["ents"]["old"], "old": ""}
             )
             offset += 2
         elif pos in ["DTT", "DT"]: # כולנו
@@ -252,6 +255,7 @@ def add_functional_nodes_if_necessary(graph, node_idx):
                 features={"new": f"Case=Gen|{clean_suffix_feats}|PronType=Prs", "old": features},
                 arc_label={"new": "nmod:poss", "old": "nmod:poss"},
                 parent=node_idx,
+                ents={"new": node["ents"]["old"], "old": ""}
             )
             offset += 1
     return offset
@@ -274,8 +278,6 @@ def add_nodes(graph, dep_tree):
     parents_traceback = defaultdict(int)
     for i, row in dep_tree.iterrows():
         parent = int(row["HEAD"])-1
-        if parent >= 0 and offset > 0:  # do not add offset if parent is 0 (root)
-            parents_traceback[parent] = parent + offset
         graph.add_node(i+offset,
                        form={"new": "", "old": row["FORM"]},
                        pos={"new": "", "old": row['XPOS']},
@@ -283,8 +285,11 @@ def add_nodes(graph, dep_tree):
                        features={"new": "", "old": row["FEATS"]},
                        arc_label={"new": "", "old": row["DEPREL"]},
                        parent=parent,
+                       ents={"new": "", "old": row["ENTS"]}
                        )
         offset += add_functional_nodes_if_necessary(graph, i+offset)
+        if parent >= 0 and offset > 0:  # do not add offset if parent is 0 (root)
+            parents_traceback[i] = i + offset
     return parents_traceback
 
 
@@ -296,13 +301,12 @@ def convert_sentence_to_graph(dep_tree) -> nx.DiGraph:
     return graph
 
 
-def run(dep_tree: pd.DataFrame) -> pd.DataFrame:
+def convert(dep_tree: pd.DataFrame) -> pd.DataFrame:
     graph = convert_sentence_to_graph(dep_tree)
     nodelist = list(graph.nodes(data=True))
-    df = pd.DataFrame(columns=["ID", "FORM", "LEMMA", "XPOS", "UPOS", "FEATS", "HEAD", "DEPREL"])
-    for node in nodelist:
-        df = df.append(
-            {
+    df = pd.DataFrame(columns=["ID", "FORM", "LEMMA", "XPOS", "UPOS", "FEATS", "HEAD", "DEPREL", "ENTS"])
+    for i, node in enumerate(nodelist):
+        df.at[i, :] = {
                 "ID": str(node[0]+1),
                 "FORM": node[1]["form"]["new"],
                 "LEMMA": node[1]["lemma"]["new"],
@@ -311,17 +315,15 @@ def run(dep_tree: pd.DataFrame) -> pd.DataFrame:
                 "FEATS":node[1]["features"]["new"],
                 "HEAD": str(node[1]["parent"]+1),
                 "DEPREL": node[1]["arc_label"]["new"],
-        }, ignore_index=True)
+                "ENTS": node[1]["ents"]["new"]
+        }
     return df
 
 
-if __name__ == '__main__':
-    url = 'http://127.0.0.1:8000'
-    text = 'אכלת פלפל? שתה מיץ.'
-    yap_output = call_api(text, url)
-    for _, sent in yap_output:
-        df = parse_yap_output(sent)
-        parsed_sent = run(df)
-        print(type(parsed_sent), parsed_sent)
-
-
+if __name__ == "__main__":
+    url = 'http://localhost'  # change this if you refer to a remote YAP server
+    # text = "יוסי כהן ביקר את דודתו בירושלים"
+    text = 'גנן גידל דגן ב"חווה החקלאית"'
+    for sentence, content, ents in call_api(text, url, use_nemo=True, method="morph_hybrid"):
+        spmrl = parse_yap_output(content, ents)
+        ud = convert(spmrl)
