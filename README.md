@@ -21,9 +21,10 @@ from src.utils import call_api, parse_yap_output
 from src.converter import run
 
 text = 'אכלת פלפל? שתה מיץ.' # or any text you wish
-yap_output = call_api(text, url)
-for _, sent in yap_output:
-    df = parse_yap_output(sent)
-    print(run(df))
+url = ... # your YAP/NEMO server address (without port)
+method = <"yap/heb/joint" / "multi_align_hybrid" / "morph_hybrid">
+for sentence, content, ents in call_api(text, url, use_nemo=<False/True>, method=method):
+    spmrl = parse_yap_output(content, ents)
+    ud = convert(spmrl)
 ```
 
