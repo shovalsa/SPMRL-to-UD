@@ -58,26 +58,30 @@ if __name__ == "__main__":
         if ner_method == "Only YAP":
             ner_method = "yap/heb/joint"
             nemo = False
-        for sentence, content, ents in call_api(text, url, method=ner_method, use_nemo=nemo):
-            st.subheader(sentence)
-            st.write("SPMRL: ")
-            spmrl = None
-            try:
-                spmrl = parse_yap_output(content, ents)
-                # st.dataframe(spmrl)
-                dep_svg_spmrl = convert_to_displacy_format(spmrl)
+        try:
+            for sentence, content, ents in call_api(text, url, method=ner_method, use_nemo=nemo):
+                st.subheader(sentence)
+                st.write("SPMRL: ")
+                spmrl = None
+                try:
+                    spmrl = parse_yap_output(content, ents)
+                    # st.dataframe(spmrl)
+                    dep_svg_spmrl = convert_to_displacy_format(spmrl)
 
-                st.write(dep_svg_spmrl, unsafe_allow_html=True)
-                if not dep_svg_spmrl:
+                    st.write(dep_svg_spmrl, unsafe_allow_html=True)
+                    if not dep_svg_spmrl:
+                        st.error(f"Could not parse the sentence {sentence} with YAP. Try another method (e.g. morph_hybrid)")
+                except:
                     st.error(f"Could not parse the sentence {sentence} with YAP. Try another method (e.g. morph_hybrid)")
-            except:
-                st.error(f"Could not parse the sentence {sentence} with YAP. Try another method (e.g. morph_hybrid)")
-            if spmrl is not None:
-                st.write("UD: ")
-                ud = convert(spmrl)
-                # st.dataframe(ud, width=20000)
-                dep_svg_ud = convert_to_displacy_format(ud)
-                st.write(dep_svg_ud, unsafe_allow_html=True)
+                if spmrl is not None:
+                    st.write("UD: ")
+                    ud = convert(spmrl)
+                    # st.dataframe(ud, width=20000)
+                    dep_svg_ud = convert_to_displacy_format(ud)
+                    st.write(dep_svg_ud, unsafe_allow_html=True)
 
-
+        except:
+            st.error("Could not connect to relevant server. If you choose a NER supporting method, make sure "
+                     "you have a NEMO server running at localhost:8090 and YAP server running at localhost:8000"
+                     " or revise url and port in the code.")
 

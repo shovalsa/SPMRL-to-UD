@@ -74,11 +74,3 @@ def call_api(text, url, method="yap/heb/joint", use_nemo=False):
                 logger.error(f"Parsing failed. Try another method (e.g. morph_hybrid): {e}")
         yield txt, content, ents
 
-
-if __name__ == "__main__":
-    text = 'גנן גידל דגן בגן של יוסי כהן יו"ר הסוכנות. זה היה טעים'
-    method = "morph_hybrid"
-    url = 'http://localhost'
-    nemo_key = "nemo_multi_align_morph" if method in ["multi_align_hybrid", "morph_hybrid"] else "nemo_morph"
-
-

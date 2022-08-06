@@ -319,11 +319,3 @@ def convert(dep_tree: pd.DataFrame) -> pd.DataFrame:
         }
     return df
 
-
-if __name__ == "__main__":
-    url = 'http://localhost'  # change this if you refer to a remote YAP server
-    # text = "יוסי כהן ביקר את דודתו בירושלים"
-    text = 'גנן גידל דגן ב"חווה החקלאית"'
-    for sentence, content, ents in call_api(text, url, use_nemo=True, method="morph_hybrid"):
-        spmrl = parse_yap_output(content, ents)
-        ud = convert(spmrl)
