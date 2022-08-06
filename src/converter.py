@@ -321,6 +321,7 @@ if __name__ == '__main__':
     yap_output = call_api(text, url)
     for _, sent in yap_output:
         df = parse_yap_output(sent)
-        print(run(df))
+        parsed_sent = run(df)
+        print(type(parsed_sent), parsed_sent)
 
 

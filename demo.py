@@ -1,5 +1,5 @@
 import streamlit as st
-from src.utils import parse_yap_output, call_api
+from src.utils import parse_yap_output, call_api, call_nemo_api
 from src.converter import run
 
 from spacy import displacy
@@ -38,17 +38,18 @@ def convert_to_displacy_format(df):
 
 
 if __name__ == "__main__":
-    url = 'http://localhost:8000'  # change this if you refer to a remote YAP server
+    url = 'http://localhost'  # change this if you refer to a remote YAP server
     with st.sidebar:
         st.title("Convert YAP's SPMRL output to UD")
         text = st.text_area("", placeholder="גנן גידל דגן בגן")
         button = st.button('parse text')
     if button:
         st.header("Dependency Trees")
-        for sentence, content in call_api(text, url):
+        for sentence, content in call_api(text, url, port="8000"):
             st.subheader(sentence)
             st.write("SPMRL: ")
             spmrl = None
+            call_nemo_api(text, method="run_ncrf_model", url=url, port="8090")
             try:
                 spmrl = parse_yap_output(content)
 

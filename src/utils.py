@@ -27,8 +27,8 @@ def handle_quotes(text):
     return text
 
 
-def call_api(text, url):
-    url = f'{url}/yap/heb/joint'  # change this if you refer to a remote YAP server
+def call_api(text, url, port):
+    url = f'{url}:{port}/yap/heb/joint'  # change this if you refer to a remote YAP server
     text_to_sentences = re.split(r"(?<=\S[\.\?\!]\s)", text)
     for txt in text_to_sentences:
         sentence = handle_punct(txt)
@@ -50,3 +50,13 @@ def call_api(text, url):
             content = response.json()
             content = content["dep_tree"]
         yield txt, content
+
+
+def call_nemo_api(text, method, url, port):
+    url = f'{url}:{port}/{method}'  # change this if you refer to a remote YAP server
+    response = requests.post(url,
+                             headers={'accept': 'application/json', 'Content-Type': 'application/json'},
+                             json={'sentences': text, 'tokenized': False},
+                             params={"verbose": 2, "include_yap_outputs": True})
+    content = response.json()
+    print(content)
